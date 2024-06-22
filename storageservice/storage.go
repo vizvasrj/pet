@@ -28,6 +28,7 @@ type StorageService struct {
 
 func (s *StorageService) CreatePet(ctx context.Context, pet *petstore.NewPet) (*petstore.Pet, error) {
 	// Implement the method
+	// fmt.Println(pet)
 	return &petstore.Pet{}, nil
 }
 
