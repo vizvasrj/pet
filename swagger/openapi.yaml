@@ -157,6 +157,10 @@ components:
               type: integer
               format: int64
               description: Unique id of the pet
+            tags:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tag'
     NewPet:
       required:
         - name
@@ -165,13 +169,7 @@ components:
           type: string
           description: Name of the pet
         category:
-          type: object
-          properties:
-            id:
-              type: integer
-              format: int64
-            name:
-              type: string
+          $ref: '#/components/schemas/Category'
         photoUrls:
           type: array
           items:
@@ -179,14 +177,22 @@ components:
         tags:
           type: array
           items:
-            type: object
-            properties:
-              id:
-                type: integer
-                format: int64
-              name:
-                type: string
+            $ref: '#/components/schemas/Tag'
         status:
+          type: string
+    Tag:
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+    Category:
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
           type: string
     Error:
       required:

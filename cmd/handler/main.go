@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.Llongfile | log.LstdFlags | log.Ltime)
 	envs := env.GetEnvs()
 	db := storageservice.GetConnection(envs)
 	defer db.Close()
