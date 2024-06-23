@@ -68,3 +68,41 @@ var _ = Describe("CreatePet", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
+
+func TestFindPetByID(t *testing.T) {
+	id := int64(2)
+	db := storageservice.GetConnection(env.GetEnvs())
+	s := storageservice.StorageService{
+		Db: db,
+	}
+	pet, err := s.FindPetByID(context.Background(), id)
+	if err != nil {
+		t.Errorf("error: %v", err)
+	}
+	t.Logf("pet: %v", pet)
+	if pet.Id != id {
+		t.Errorf("expected pet id %d, got %d", id, pet.Id)
+	}
+	if pet.Name != "cat meao 5" {
+		t.Errorf("expected pet name cat meao 5, got %s", pet.Name)
+	}
+	if *pet.Category.Name != "Cat" {
+		t.Errorf("expected category name Cat, got %s", *pet.Category.Name)
+	}
+	if len(*pet.Tags) != 2 {
+		t.Errorf("expected 2 tags, got %d", len(*pet.Tags))
+	}
+
+	for i, tag := range *pet.Tags {
+		if i == 0 {
+			if *tag.Name != "meao tag 4" {
+				t.Errorf("expected tag name meao tag 4, got %s", *tag.Name)
+			}
+		} else {
+			if *tag.Name != "meao tag 5" {
+				t.Errorf("expected tag name meao tag 5, got %s", *tag.Name)
+			}
+		}
+	}
+
+}
