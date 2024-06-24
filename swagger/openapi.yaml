@@ -163,7 +163,12 @@ components:
                 $ref: '#/components/schemas/Tag'
     NewPet:
       required:
+        - id
         - name
+        - photoUrls
+        - status
+        - category
+        - tags
       properties:
         name:
           type: string
@@ -181,6 +186,9 @@ components:
         status:
           type: string
     Tag:
+      required:
+        - id
+        - name
       properties:
         id:
           type: integer
@@ -188,6 +196,9 @@ components:
         name:
           type: string
     Category:
+      required:
+        - id
+        - name
       properties:
         id:
           type: integer

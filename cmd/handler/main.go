@@ -5,12 +5,15 @@ import (
 	"log"
 	"net/http"
 	"src/env"
+	"src/etheus"
 	"src/handler"
 	"src/middleware"
 	"src/petstore"
 	"src/storageservice"
 
 	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -25,7 +28,9 @@ func main() {
 		},
 	}
 	r := mux.NewRouter()
-	petstore.HandlerFromMux(ps, r)
+	r.Handle("/metrics", promhttp.Handler())
+	s := r.PathPrefix("/api/v3").Subrouter()
+	petstore.HandlerFromMux(ps, s)
 
 	r.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		pathTemplate, err := route.GetPathTemplate()
@@ -39,8 +44,15 @@ func main() {
 	logger := log.New(log.Writer(), "", 0)
 	logMiddleware := middleware.NewLogMiddleware(logger).Middleware
 
-	wrappedRouter := logMiddleware(r)
+	wrappedRouter := logMiddleware(s)
 
-	log.Fatal(http.ListenAndServe(":8080", wrappedRouter))
+	prometheusRouter := middleware.PrometheusMiddleware(wrappedRouter)
 
+	log.Fatal(http.ListenAndServe(":8080", prometheusRouter))
+
+}
+
+func init() {
+	prometheus.MustRegister(etheus.RequestCounter)
+	prometheus.MustRegister(etheus.RequestDurationHistogram)
 }

@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"src/petstore"
 	"src/storageservice"
@@ -13,8 +12,16 @@ type PetHandler struct {
 }
 
 func writeError(w http.ResponseWriter, status int, err error) {
+	petErr := petstore.Error{
+		Code:    int32(status),
+		Message: err.Error(),
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	w.Write([]byte(err.Error()))
+	err = json.NewEncoder(w).Encode(petErr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
@@ -24,8 +31,10 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 }
 
 func (h PetHandler) FindPets(w http.ResponseWriter, r *http.Request, params petstore.FindPetsParams) {
-	tags := *params.Tags
-	fmt.Printf("%#v\n", tags)
+	tags := []string{}
+	if params.Tags != nil {
+		tags = *params.Tags
+	}
 	var limit int64
 	if params.Limit != nil {
 		limit = int64(*params.Limit)
@@ -52,13 +61,6 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	fmt.Println("name", newPet.Name)
-	for _, tag := range *newPet.Tags {
-		fmt.Println("tag", *tag.Name)
-	}
-	fmt.Println("status", *newPet.Status)
-	fmt.Println("photoUrls", *newPet.PhotoUrls)
-	fmt.Println("category", *newPet.Category.Name)
 
 	pet, err := h.Storage.CreatePet(r.Context(), &newPet)
 	if err != nil {

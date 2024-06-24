@@ -41,14 +41,14 @@ var _ = Describe("CreatePet", func() {
 		tagId := int64(0)
 		tagName := "meao tag 4"
 		tag := petstore.Tag{
-			Id:   &tagId,
-			Name: &tagName,
+			Id:   tagId,
+			Name: tagName,
 		}
 
 		tag2Name := "meao tag 5"
 		tag2 := petstore.Tag{
-			Id:   &tagId,
-			Name: &tag2Name,
+			Id:   tagId,
+			Name: tag2Name,
 		}
 
 		tags := []petstore.Tag{}
@@ -57,12 +57,12 @@ var _ = Describe("CreatePet", func() {
 
 		_, err := s.CreatePet(context.Background(), &petstore.NewPet{
 			Name: "cat meao 5",
-			Category: &petstore.Category{
-				Id:   &cId,
-				Name: &cName,
+			Category: petstore.Category{
+				Id:   cId,
+				Name: cName,
 			},
-			PhotoUrls: &[]string{"mearourl_string"},
-			Tags:      &tags,
+			PhotoUrls: []string{"mearourl_string"},
+			Tags:      tags,
 		})
 
 		Expect(err).NotTo(HaveOccurred())
@@ -86,21 +86,21 @@ func TestFindPetByID(t *testing.T) {
 	if pet.Name != "cat meao 5" {
 		t.Errorf("expected pet name cat meao 5, got %s", pet.Name)
 	}
-	if *pet.Category.Name != "Cat" {
-		t.Errorf("expected category name Cat, got %s", *pet.Category.Name)
+	if pet.Category.Name != "Cat" {
+		t.Errorf("expected category name Cat, got %s", pet.Category.Name)
 	}
-	if len(*pet.Tags) != 2 {
-		t.Errorf("expected 2 tags, got %d", len(*pet.Tags))
+	if len(pet.Tags) != 2 {
+		t.Errorf("expected 2 tags, got %d", len(pet.Tags))
 	}
 
-	for i, tag := range *pet.Tags {
+	for i, tag := range pet.Tags {
 		if i == 0 {
-			if *tag.Name != "meao tag 4" {
-				t.Errorf("expected tag name meao tag 4, got %s", *tag.Name)
+			if tag.Name != "meao tag 4" {
+				t.Errorf("expected tag name meao tag 4, got %s", tag.Name)
 			}
 		} else {
-			if *tag.Name != "meao tag 5" {
-				t.Errorf("expected tag name meao tag 5, got %s", *tag.Name)
+			if tag.Name != "meao tag 5" {
+				t.Errorf("expected tag name meao tag 5, got %s", tag.Name)
 			}
 		}
 	}

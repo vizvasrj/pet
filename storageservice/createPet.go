@@ -11,27 +11,27 @@ import (
 
 func (s *StorageService) createPetInTransaction(ctx context.Context, tx *sql.Tx, pet *petstore.NewPet) (*petstore.Pet, error) {
 	// 1. Find or Create Category
-	categoryID, err := s.findOrCreateCategory(ctx, tx, *pet.Category.Name)
+	categoryID, err := s.findOrCreateCategory(ctx, tx, pet.Category.Name)
 	if err != nil {
 		return nil, myerror.WrapError(err, "failed to find or create category")
 	}
 
 	// 2. Create Pet
-	createdPetID, err := s.createPetRecord(ctx, tx, pet.Name, categoryID, pet.Status)
+	createdPetID, err := s.createPetRecord(ctx, tx, pet.Name, categoryID, &pet.Status)
 	if err != nil {
 		return nil, myerror.WrapError(err, "failed to create pet")
 	}
 
 	// 3. Create Pet Tags (Find or Create Tags)
 	if pet.Tags != nil {
-		if err := s.createPetTags(ctx, tx, createdPetID, *pet.Tags); err != nil {
+		if err := s.createPetTags(ctx, tx, createdPetID, pet.Tags); err != nil {
 			return nil, myerror.WrapError(err, "failed to create pet tags")
 		}
 	}
 
 	// 4. Create Pet Photos
 	if pet.PhotoUrls != nil {
-		if err := s.createPetPhotos(ctx, tx, createdPetID, *pet.PhotoUrls); err != nil {
+		if err := s.createPetPhotos(ctx, tx, createdPetID, pet.PhotoUrls); err != nil {
 			return nil, myerror.WrapError(err, "failed to create pet photos")
 		}
 	}
