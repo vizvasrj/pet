@@ -4,11 +4,15 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Middleware struct {
-	Logger        *log.Logger
-	ExcludeRoutes []string
+	Logger                   *log.Logger
+	ExcludeRoutes            []string
+	RequestCounter           *prometheus.CounterVec
+	RequestDurationHistogram *prometheus.HistogramVec
 }
 
 func NewMiddleware() *Middleware {

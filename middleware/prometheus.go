@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"src/etheus"
 	"strconv"
 	"time"
 )
@@ -38,7 +37,7 @@ func (m *Middleware) PrometheusMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		// Record metrics
-		etheus.RequestCounter.WithLabelValues(r.Method, r.URL.Path, strconv.Itoa(wrappedWriter.statusCode)).Inc()
-		etheus.RequestDurationHistogram.WithLabelValues(r.Method, r.URL.Path, strconv.Itoa(wrappedWriter.statusCode)).Observe(duration.Seconds())
+		m.RequestCounter.WithLabelValues(r.Method, r.URL.Path, strconv.Itoa(wrappedWriter.statusCode)).Inc()
+		m.RequestDurationHistogram.WithLabelValues(r.Method, r.URL.Path, strconv.Itoa(wrappedWriter.statusCode)).Observe(duration.Seconds())
 	})
 }
