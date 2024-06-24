@@ -19,8 +19,14 @@ func (rw *responseWriter) WriteHeader(statusCode int) {
 }
 
 // Middleware to instrument handlers with Prometheus metrics
-func PrometheusMiddleware(next http.Handler) http.Handler {
+func (m *Middleware) PrometheusMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for _, route := range m.ExcludeRoutes {
+			if r.URL.Path == route {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
 		start := time.Now()
 
 		// Wrap the response writer to capture status code

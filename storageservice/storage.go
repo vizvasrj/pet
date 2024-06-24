@@ -152,8 +152,7 @@ func (s *StorageService) FindPets(ctx context.Context, limit int64, tags []strin
 	if limit > 0 {
 		query += fmt.Sprintf(" LIMIT %d", limit)
 	}
-	color.Blue("Limit, %v", limit)
-	color.Blue("Query: %s, Args: %v", query, args)
+
 	// 4. Execute the query
 	rows, err := s.Db.QueryContext(ctx, query, args...)
 	if err != nil {

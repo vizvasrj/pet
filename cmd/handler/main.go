@@ -28,7 +28,6 @@ func main() {
 		},
 	}
 	r := mux.NewRouter()
-	r.Handle("/metrics", promhttp.Handler())
 	s := r.PathPrefix("/api/v3").Subrouter()
 	petstore.HandlerFromMux(ps, s)
 
@@ -40,13 +39,18 @@ func main() {
 		}
 		return nil
 	})
+	r.Handle("/metrics", promhttp.Handler())
 
 	logger := log.New(log.Writer(), "", 0)
-	logMiddleware := middleware.NewLogMiddleware(logger).Middleware
+	m := middleware.NewMiddleware()
+	m.Logger = logger
 
-	wrappedRouter := logMiddleware(s)
+	excludeRoutes := []string{"/metrics"}
+	m.ExcludeRoutes = excludeRoutes
 
-	prometheusRouter := middleware.PrometheusMiddleware(wrappedRouter)
+	r2 := m.LogMiddleware(r)
+
+	prometheusRouter := m.PrometheusMiddleware(r2)
 
 	log.Fatal(http.ListenAndServe(":8080", prometheusRouter))
 

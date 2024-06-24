@@ -6,16 +6,18 @@ import (
 	"time"
 )
 
-type LogMiddleware struct {
-	logger *log.Logger
+type Middleware struct {
+	Logger        *log.Logger
+	ExcludeRoutes []string
 }
 
-func NewLogMiddleware(logger *log.Logger) *LogMiddleware {
-	return &LogMiddleware{logger: logger}
+func NewMiddleware() *Middleware {
+	return &Middleware{}
 }
 
-func (m *LogMiddleware) Middleware(next http.Handler) http.Handler {
+func (m *Middleware) LogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Log the request
 		startTime := time.Now()
 
 		// Wrap the response writer
@@ -25,7 +27,7 @@ func (m *LogMiddleware) Middleware(next http.Handler) http.Handler {
 		next.ServeHTTP(lrw, r)
 
 		// Log the request
-		m.logger.Printf("%s %s %d %s", r.Method, r.URL.EscapedPath(), lrw.statusCode, time.Since(startTime))
+		m.Logger.Printf("%s %s %d %s", r.Method, r.URL.EscapedPath(), lrw.statusCode, time.Since(startTime))
 	})
 }
 
