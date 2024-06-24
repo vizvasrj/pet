@@ -48,8 +48,12 @@ func (a *App) SetupRoutes() {
 	api := a.Router.PathPrefix("/api/v3").Subrouter()
 
 	// Initialize your handler
-	petHandler := handler.PetHandler{
-		Storage: a.Storage,
+	// petHandler := handler.PetHandler{
+	// 	Storage: a.Storage,
+	// }
+	petHandler, err := handler.NewPetHandler("example.com:8081")
+	if err != nil {
+		a.Log.Fatalf("Error initializing PetHandler: %v", err)
 	}
 	petstore.HandlerFromMux(petHandler, api)
 

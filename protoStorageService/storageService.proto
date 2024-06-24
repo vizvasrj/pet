@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package protostorageservice;
+
+option go_package = "src/protostorageservice";
+
+message Category {
+    int64 id = 1;
+    string name = 2;
+}
+
+message Tag {
+    int64 id = 1;
+    string name = 2;
+}
+
+message Pet {
+    int64 id = 1;
+    string name = 2;
+    Category category = 3;
+    repeated string photo_urls = 4;
+    repeated Tag tags = 5;
+    string status = 6;
+}
+
+message NewPet {
+    Category category = 1;
+    string name = 2;
+    repeated string photo_urls = 3;
+    repeated Tag tags = 4;
+    string status = 5;
+}
+
+service StorageService {
+    rpc CreatePet(NewPet) returns (Pet);
+    rpc FindPets(FindPetsRequest) returns (FindPetsResponse);
+    rpc FindPetById(PetID) returns (Pet);
+    rpc DeletePet(PetID) returns (Empty);
+}
+
+message FindPetsRequest {
+    int32 limit = 1;
+    repeated string tags = 2;
+}
+
+message PetID {
+    int64 id = 1;
+}
+
+message Empty {}
+
+message FindPetsResponse {
+    repeated Pet pets = 1;
+}

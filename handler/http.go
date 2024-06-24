@@ -1,27 +1,90 @@
 package handler
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 	"src/petstore"
-	"src/storageservice"
+	protostorageservice "src/protoStorageService"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 type PetHandler struct {
-	Storage *storageservice.StorageService
+	// Storage *storageservice.StorageService
+	Client protostorageservice.StorageServiceClient
 }
 
-func writeError(w http.ResponseWriter, status int, err error) {
-	petErr := petstore.Error{
-		Code:    int32(status),
-		Message: err.Error(),
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	err = json.NewEncoder(w).Encode(petErr)
+// func NewPetHandler(storageURL string) (*PetHandler, error) {
+
+// 	conn, err := grpc.NewClient(storageURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &PetHandler{
+// 		Client: protostorageservice.NewStorageServiceClient(conn),
+// 	}, nil
+// }
+
+func NewPetHandler(storageURL string) (*PetHandler, error) {
+	// Load the server's certificate
+	serverCert, err := os.ReadFile("./cert/server.crt")
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil, err
 	}
+
+	// Create a certificate pool
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(serverCert) {
+		return nil, fmt.Errorf("failed to append server certs")
+	}
+
+	// Create the credentials and return it
+	config := &tls.Config{
+		RootCAs: certPool,
+	}
+	creds := credentials.NewTLS(config)
+
+	conn, err := grpc.NewClient(storageURL, grpc.WithTransportCredentials(creds))
+	if err != nil {
+		return nil, err
+	}
+
+	return &PetHandler{
+		Client: protostorageservice.NewStorageServiceClient(conn),
+	}, nil
+}
+
+func writeError(w http.ResponseWriter, code int32, err error) {
+	if errStatus, ok := status.FromError(err); ok {
+		if errStatus.Code() == codes.NotFound {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(petstore.Error{Code: http.StatusNotFound, Message: errStatus.Message()})
+			return
+		}
+
+	}
+	if code == 0 {
+		code = 500
+	}
+	// petErr := petstore.Error{
+	// 	Code:    code,
+	// 	Message: "Internal Server Error",
+	// }
+	// w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(int(code))
+	// err = json.NewEncoder(w).Encode(petErr)
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// }
 }
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
@@ -39,8 +102,11 @@ func (h PetHandler) FindPets(w http.ResponseWriter, r *http.Request, params pets
 	if params.Limit != nil {
 		limit = int64(*params.Limit)
 	}
-
-	pets, err := h.Storage.FindPets(r.Context(), limit, tags)
+	req := protostorageservice.FindPetsRequest{
+		Limit: int32(limit),
+		Tags:  tags,
+	}
+	pets, err := h.Client.FindPets(r.Context(), &req)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -61,8 +127,18 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
+	tags := []*protostorageservice.Tag{}
+	for _, tag := range newPet.Tags {
+		tags = append(tags, &protostorageservice.Tag{Id: tag.Id, Name: tag.Name})
+	}
 
-	pet, err := h.Storage.CreatePet(r.Context(), &newPet)
+	pet, err := h.Client.CreatePet(r.Context(), &protostorageservice.NewPet{
+		Name:      newPet.Name,
+		Category:  &protostorageservice.Category{Name: newPet.Category.Name},
+		Status:    newPet.Status,
+		PhotoUrls: newPet.PhotoUrls,
+		Tags:      tags,
+	})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -72,9 +148,9 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) {
-	err := h.Storage.DeletePet(r.Context(), id)
+	_, err := h.Client.DeletePet(r.Context(), &protostorageservice.PetID{Id: id})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		writeError(w, 0, err)
 		return
 	}
 
@@ -82,7 +158,7 @@ func (h PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) 
 }
 
 func (h PetHandler) FindPetByID(w http.ResponseWriter, r *http.Request, id int64) {
-	pet, err := h.Storage.FindPetByID(r.Context(), id)
+	pet, err := h.Client.FindPetById(r.Context(), &protostorageservice.PetID{Id: id})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
