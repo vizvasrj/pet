@@ -14,7 +14,8 @@ import (
 )
 
 func GetConnection(e *env.Env) *sql.DB {
-	connStr := "user=" + e.PostgreUser + " password=" + e.PostgrePassword + " dbname=" + e.PostgreDB + " sslmode=" + e.PostgreSSLMode
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		e.PostgreHost, e.PostgrePort, e.PostgreUser, e.PostgrePassword, e.PostgreDB, e.PostgreSSLMode)
 	color.Green("Connection, %s", connStr)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
