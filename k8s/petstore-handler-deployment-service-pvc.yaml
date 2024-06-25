@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: petstore-handler
+spec:
+  replicas: 1 # Adjust as needed
+  selector:
+    matchLabels:
+      app: petstore-handler
+  template:
+    metadata:
+      labels:
+        app: petstore-handler
+    spec:
+      containers:
+      - name: petstore-handler
+        image: <your-handler-image> # Replace with your Docker image
+        ports:
+        - containerPort: 8080
+        env:
+          - name: STORAGE_SERVICE_URL
+            value: petstore-storage-service:8081 # Service name for storage service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: petstore-handler-service
+spec:
+  selector:
+    app: petstore-handler
+  ports:
+  - protocol: TCP
+    port: 80 # Expose on port 80 for external access
+    targetPort: 8080
+  type: LoadBalancer # Creates an external IP 
