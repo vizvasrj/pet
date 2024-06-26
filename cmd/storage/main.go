@@ -4,8 +4,9 @@ import (
 	"log"
 	"net"
 	"src/env"
+	"src/pkg/storage/database"
+	"src/pkg/storage/service"
 	"src/proto_storage"
-	"src/storage"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -13,12 +14,12 @@ import (
 
 func main() {
 	envs := env.GetEnvs()
-	db := storage.GetConnection(envs)
-	s := &storage.StorageService{
-		Db: db,
-	}
+	db := database.GetConnection(envs)
 	defer db.Close()
 
+	s := &service.StorageService{
+		Db: db,
+	}
 	lis, err := net.Listen("tcp", ":8081")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
