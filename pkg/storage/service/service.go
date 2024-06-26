@@ -9,35 +9,39 @@ import (
 	"src/proto_storage"
 
 	"github.com/fatih/color"
+	"go.uber.org/zap"
 )
 
 type StorageService struct {
 	proto_storage.UnimplementedStorageServiceServer
-	Db *sql.DB
+	Db     *sql.DB
+	Logger *zap.Logger
 }
 
 func (s *StorageService) CreatePet(ctx context.Context, pet *proto_storage.NewPet) (*proto_storage.Pet, error) {
 	tx, err := s.Db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, myerror.WrapError(err, "failed to begin transaction")
+		return nil, myerror.WrapError(s.Logger, err, "failed to begin transaction")
 	}
 	defer tx.Rollback() // Rollback if any step fails
 
 	createdPet, err := s.createPetInTransaction(ctx, tx, pet)
 	if err != nil {
-		return nil, myerror.WrapError(err, "") // Error will be specific to a step
+		return nil, myerror.WrapError(s.Logger, err, "") // Error will be specific to a step
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, myerror.WrapError(err, "failed to commit transaction")
+		return nil, myerror.WrapError(s.Logger, err, "failed to commit transaction")
 	}
 
 	return createdPet, nil
 }
 
-func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPetsRequest) (*proto_storage.FindPetsResponse, error) {
-	color.Red("hi there")
+type Photo struct {
+	Url string `json:"url"`
+}
 
+func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPetsRequest) (*proto_storage.FindPetsResponse, error) {
 	// 1. Build the base query
 	query := `
 	SELECT 
@@ -46,11 +50,20 @@ func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPe
 		p.category_id, 
 		c.name as category_name, 
 		p.status,
-		json_agg(json_build_object('id', t.id, 'name', t.name)) as tags
+		(
+			SELECT json_agg(json_build_object('id', t.id, 'name', t.name))
+			FROM pet_tags pt 
+			JOIN tags t ON pt.tag_id = t.id
+			WHERE pt.pet_id = p.id
+		) as tags,
+		(
+			SELECT json_agg(json_build_object('url', pp.url))
+			FROM pet_photos pp
+			WHERE pp.pet_id = p.id
+		) as photos
 	FROM pets p
-	JOIN categories c ON p.category_id = c.id
-	LEFT JOIN pet_tags pt ON p.id = pt.pet_id
-	LEFT JOIN tags t ON pt.tag_id = t.id
+	LEFT JOIN categories c ON p.category_id = c.id
+
 	`
 	// 2. Add tag filtering if tags are provided
 	var args []interface{}
@@ -72,7 +85,7 @@ func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPe
 	// 4. Execute the query
 	rows, err := s.Db.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, myerror.WrapError(err, "failed to find pets")
+		return nil, myerror.WrapError(s.Logger, err, "failed to find pets")
 	}
 	defer rows.Close()
 
@@ -85,20 +98,44 @@ func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPe
 			categoryId   int64
 			categoryName string
 			status       sql.NullString
-			tagsString   string
+			tagsString   sql.NullString
+			photosString sql.NullString
 		)
 
-		if err := rows.Scan(&petId, &petName, &categoryId, &categoryName, &status, &tagsString); err != nil {
-			return nil, myerror.WrapError(err, "failed to scan pet row")
+		if err := rows.Scan(&petId, &petName, &categoryId, &categoryName, &status, &tagsString, &photosString); err != nil {
+			return nil, myerror.WrapError(s.Logger, err, "failed to scan pet row")
+		}
+		fmt.Println(photosString)
+		var photos []Photo
+		if photosString.Valid {
+			err := json.Unmarshal([]byte(photosString.String), &photos)
+			if err != nil {
+				return nil, myerror.WrapError(s.Logger, err, "failed to unmarshal photos")
+			}
+		}
+		photoStrings := []string{}
+		for _, p := range photos {
+			photoStrings = append(photoStrings, p.Url)
 		}
 
 		// Unmarshal the tags
 		var tags []*proto_storage.Tag
-		err = json.Unmarshal([]byte(tagsString), &tags)
-		if err != nil {
-			return nil, myerror.WrapError(err, "failed to unmarshal tags")
+		if tagsString.Valid {
+			err := json.Unmarshal([]byte(tagsString.String), &tags)
+			if err != nil {
+				return nil, myerror.WrapError(s.Logger, err, "failed to unmarshal tags")
+			}
 		}
+
+		// photoUrls := make([]string, 0, len(photosString))
+		// for _, photo := range photosString {
+		// 	if photo.Valid { // Check if the URL is not NULL
+		// 		photoUrls = append(photoUrls, photo.String)
+		// 	}
+		// }
 		// Create pet object
+		color.HiRed("photoStrings: %v", photoStrings)
+
 		pet := &proto_storage.Pet{
 			Id:   petId,
 			Name: petName,
@@ -106,8 +143,9 @@ func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPe
 				Id:   categoryId,
 				Name: categoryName,
 			},
-			Status: "", // Initialize status as empty string
-			Tags:   tags,
+			Status:    "", // Initialize status as empty string
+			Tags:      tags,
+			PhotoUrls: photoStrings,
 		}
 
 		// Set status only if it's not NULL in the database
@@ -124,7 +162,6 @@ func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPe
 }
 
 func (s *StorageService) FindPetById(ctx context.Context, req *proto_storage.PetID) (*proto_storage.Pet, error) {
-	color.Red("hi there")
 	// Implement the method
 	pet := &proto_storage.Pet{Id: req.Id}
 	query := `
@@ -134,27 +171,36 @@ func (s *StorageService) FindPetById(ctx context.Context, req *proto_storage.Pet
 		p.category_id, 
 		c.name as category_name, 
 		p.status,
-		json_agg(json_build_object('id', t.id, 'name', t.name)) as tags
+		(
+			SELECT json_agg(json_build_object('id', t.id, 'name', t.name))
+			FROM pet_tags pt 
+			JOIN tags t ON pt.tag_id = t.id
+			WHERE pt.pet_id = p.id
+		) as tags,
+		(
+			SELECT json_agg(json_build_object('url', pp.url))
+			FROM pet_photos pp
+			WHERE pp.pet_id = p.id
+		) as photos
 	FROM pets p
-	JOIN categories c ON p.category_id = c.id
-	JOIN pet_tags pt ON p.id = pt.pet_id
-	JOIN tags t ON pt.tag_id = t.id
+	LEFT JOIN categories c ON p.category_id = c.id
 	WHERE p.id = $1
-	GROUP BY p.id, p.name, p.category_id, c.name, p.status`
+	`
 	var (
 		// petId        int64
 		petName      string
 		categoryId   int64
 		categoryName string
 		status       sql.NullString
-		tagsString   string
+		tagsString   sql.NullString
+		photosString sql.NullString
 	)
-	err := s.Db.QueryRowContext(ctx, query, req.Id).Scan(&pet.Id, &petName, &categoryId, &categoryName, &status, &tagsString)
+	err := s.Db.QueryRowContext(ctx, query, req.Id).Scan(&pet.Id, &petName, &categoryId, &categoryName, &status, &tagsString, &photosString)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, myerror.WrapError(err, "failed to find pet")
+		return nil, myerror.WrapError(s.Logger, err, "failed to find pet")
 	}
 	pet.Name = petName
 	pet.Category = &proto_storage.Category{
@@ -166,12 +212,27 @@ func (s *StorageService) FindPetById(ctx context.Context, req *proto_storage.Pet
 	}
 	// Unmarshal the tags
 	var tags []*proto_storage.Tag
-	err = json.Unmarshal([]byte(tagsString), &tags)
-	if err != nil {
-		return nil, myerror.WrapError(err, "failed to unmarshal tags")
+	if tagsString.Valid {
+		err = json.Unmarshal([]byte(tagsString.String), &tags)
+		if err != nil {
+			return nil, myerror.WrapError(s.Logger, err, "failed to unmarshal tags")
+		}
 	}
 	pet.Tags = tags
 
+	if photosString.Valid {
+		var photos []Photo
+		err := json.Unmarshal([]byte(photosString.String), &photos)
+		if err != nil {
+			return nil, myerror.WrapError(s.Logger, err, "failed to unmarshal photos")
+		}
+		photoStrings := []string{}
+		for _, p := range photos {
+			photoStrings = append(photoStrings, p.Url)
+		}
+		pet.PhotoUrls = photoStrings
+	}
+	// pet.PhotoUrls = photosString
 	return pet, nil
 }
 
@@ -183,11 +244,11 @@ func (s *StorageService) DeletePet(ctx context.Context, req *proto_storage.PetID
 	}
 	defer tx.Rollback() // Rollback if any step fails
 	if err := s.deletePetInTransaction(ctx, tx, req.Id); err != nil {
-		return nil, err
+		return nil, myerror.WrapError(s.Logger, err, "") // Error will be specific to a step
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, myerror.WrapError(err, "failed to commit transaction")
+		return nil, myerror.WrapError(s.Logger, err, "failed to commit transaction")
 	}
 
 	return nil, nil

@@ -7,11 +7,12 @@ import (
 	"os"
 	"src/petstore"
 	"src/pkg/handler/etheus"
-	"src/pkg/handler/handler"
 	"src/pkg/handler/middleware"
+	"src/pkg/handler/rest"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 )
 
 type App struct {
@@ -19,16 +20,11 @@ type App struct {
 	Log        *log.Logger
 	httpServer *http.Server
 	Metrics    *etheus.Metrics
+	Logger     *zap.Logger
 	// Storage    *storageservice.StorageService
 }
 
 func (a *App) Initialize() {
-	// envs := env.GetEnvs()
-	// db := storageservice.GetConnection(envs)
-
-	// a.Storage = &storageservice.StorageService{
-	// 	Db: db,
-	// }
 	a.Router = mux.NewRouter()
 	a.Log = log.New(log.Writer(), "", 0)
 }
@@ -54,10 +50,11 @@ func (a *App) SetupRoutes() {
 	if STORAGE_SERVICE_URL == "" {
 		a.Log.Fatalf("STORAGE_SERVICE_URL is not set")
 	}
-	petHandler, err := handler.NewPetHandler(STORAGE_SERVICE_URL)
+	petHandler, err := rest.NewPetHandler(STORAGE_SERVICE_URL)
 	if err != nil {
 		a.Log.Fatalf("Error initializing PetHandler: %v", err)
 	}
+	petHandler.Logger = a.Logger
 	petstore.HandlerFromMux(petHandler, api)
 
 	// Middleware (order matters!)

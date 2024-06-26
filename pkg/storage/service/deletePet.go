@@ -14,27 +14,27 @@ func (s *StorageService) deletePetInTransaction(ctx context.Context, tx *sql.Tx,
 	// 1. Delete from pet_tags
 	_, err := tx.ExecContext(ctx, "DELETE FROM pet_tags WHERE pet_id = $1", id)
 	if err != nil {
-		return myerror.WrapError(err, "failed to delete pet tags")
+		return myerror.WrapError(s.Logger, err, "failed to delete pet tags")
 	}
 
 	// 2. Delete from pet_photospetstore.ErrPetNotFound
 	_, err = tx.ExecContext(ctx, "DELETE FROM pet_photos WHERE pet_id = $1", id)
 	if err != nil {
-		return myerror.WrapError(err, "failed to delete pet photos")
+		return myerror.WrapError(s.Logger, err, "failed to delete pet photos")
 	}
 
 	// 3. Delete the pet from the pets table
 	result, err := tx.ExecContext(ctx, "DELETE FROM pets WHERE id = $1", id)
 	if err != nil {
-		return myerror.WrapError(err, "failed to delete pet")
+		return myerror.WrapError(s.Logger, err, "failed to delete pet")
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return myerror.WrapError(err, "failed to get rows affected")
+		return myerror.WrapError(s.Logger, err, "failed to get rows affected")
 	}
 	if rowsAffected == 0 {
-		return status.Errorf(codes.DataLoss, "pet not found") // Return an error if no pet was deleted
+		return status.Errorf(codes.NotFound, "pet not found") // Return an error if no pet was deleted
 	}
 
 	return nil

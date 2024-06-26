@@ -5,74 +5,72 @@ import (
 	"runtime"
 	"strings"
 
-	pg "github.com/lib/pq"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/status"
 )
 
+// MyError represents a structured error with the source line information.
 type MyError struct {
-	Inner            error
-	Message          string
-	SingleStacktrace string
+	Inner      error  // The original, underlying error
+	Message    string // User-friendly message
+	SourceLine string // File and line where the error originated
 }
 
-func (e MyError) Status() int {
-	// Default to 500 if no specific status code is set
-	return 500
-}
-
-func WrapError(err error, messagef string, msgArgs ...any) MyError {
-	_, currentFile, currentLine, _ := runtime.Caller(1)
-	stackTrace := fmt.Sprintf(" >>: %s:%d ", currentFile, currentLine)
-
-	switch err2 := err.(type) {
-	case MyError:
-		// If it's already a MyError, append the new message and stack trace
-		return MyError{
-			Inner:            err2.Inner, // Keep the original inner error
-			Message:          fmt.Sprintf("%s >> %s", err2.Message, fmt.Sprintf(messagef, msgArgs...)),
-			SingleStacktrace: fmt.Sprintf("%s%s", err2.SingleStacktrace, stackTrace),
-		}
-
-	case *pg.Error:
-		// Handle PostgreSQL errors, extracting relevant information
-		pgerr := err.(*pg.Error)
-		return MyError{
-			Inner:            err2,
-			Message:          pgerr.Message, // Use the PostgreSQL error message
-			SingleStacktrace: stackTrace,
-		}
-
-	default:
-		// For other error types, create a new MyError
-		return MyError{
-			Inner:            err,
-			Message:          fmt.Sprintf(messagef, msgArgs...),
-			SingleStacktrace: stackTrace,
-		}
-	}
-}
-
-func (err MyError) Error() string {
-	// Build a comprehensive error string, including wrapped messages and stack traces
+// Error returns a string representation of the error.
+func (e MyError) Error() string {
 	var sb strings.Builder
-	sb.WriteString(err.Message)
-	if err.Inner != nil {
+	sb.WriteString(e.Message)
+	if e.Inner != nil {
 		sb.WriteString(", Inner Error: ")
-		sb.WriteString(err.Inner.Error())
+		sb.WriteString(e.Inner.Error())
 	}
-	if err.SingleStacktrace != "" {
-		sb.WriteString(" Stack Trace:")
-		sb.WriteString(err.SingleStacktrace)
+	if e.SourceLine != "" {
+		sb.WriteString(fmt.Sprintf(" (Source: %s)", e.SourceLine))
 	}
 	return sb.String()
 }
 
-// New allows creating custom errors with specific status codes, but it's simplified
-func New(text string, any ...interface{}) error {
-	return fmt.Errorf(text, any...)
+// WrapError creates a new MyError, logs it, and returns the error.
+func WrapError(logger *zap.Logger, err error, messagef string, msgArgs ...any) error {
+	if _, ok := status.FromError(err); ok {
+		return err
+	}
+	_, file, line, _ := runtime.Caller(1) // Get the caller's file and line
+	sourceLine := fmt.Sprintf("%s:%d", file, line)
+
+	entry := logger.With(zap.String("source_line", sourceLine), zap.Error(err))
+
+	newMessage := fmt.Sprintf(messagef, msgArgs...)
+	entry.Error(newMessage)
+	return MyError{
+		Inner:      err,
+		Message:    newMessage,
+		SourceLine: sourceLine, // Use the new source line
+	}
+
 }
 
-// Is checks if the underlying error matches
-func Is(incomingError, matchError error) bool {
-	ierr, ok := incomingError.(MyError)
-	return ok && ierr.Inner == matchError
+// New creates a new MyError, logs it, and returns the error.
+func New(logger *zap.Logger, message string) MyError {
+	_, file, line, _ := runtime.Caller(1)
+	sourceLine := fmt.Sprintf("%s:%d", file, line)
+
+	entry := logger.With(zap.String("source_line", sourceLine))
+	entry.Error(message)
+
+	return MyError{
+		Message:    message,
+		SourceLine: sourceLine,
+	}
+}
+
+// Is checks if target error is the same as the wrapped error or its inner error.
+func Is(err, target error) bool {
+	if err == target {
+		return true
+	}
+	if myErr, ok := err.(MyError); ok && myErr.Inner != nil {
+		return myErr.Inner == target
+	}
+	return false
 }

@@ -1,4 +1,4 @@
-package handler
+package rest
 
 import (
 	"crypto/tls"
@@ -10,6 +10,7 @@ import (
 	"src/petstore"
 	"src/proto_storage"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -19,6 +20,7 @@ import (
 type PetHandler struct {
 	// Storage *storageservice.StorageService
 	Client proto_storage.StorageServiceClient
+	Logger *zap.Logger
 }
 
 // func NewPetHandler(storageURL string) (*PetHandler, error) {
@@ -62,7 +64,7 @@ func NewPetHandler(storageURL string) (*PetHandler, error) {
 	}, nil
 }
 
-func writeError(w http.ResponseWriter, code int32, err error) {
+func writeError(w http.ResponseWriter, code int32, err error, logger *zap.Logger) {
 	if errStatus, ok := status.FromError(err); ok {
 		if errStatus.Code() == codes.NotFound {
 			w.Header().Set("Content-Type", "application/json")
@@ -72,12 +74,13 @@ func writeError(w http.ResponseWriter, code int32, err error) {
 		}
 
 	}
+	logger.Error(err.Error())
 	if code == 0 {
 		code = 500
 	}
 	petErr := petstore.Error{
 		Code:    code,
-		Message: err.Error(),
+		Message: "Internal Server Error",
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(int(code))
@@ -108,7 +111,8 @@ func (h PetHandler) FindPets(w http.ResponseWriter, r *http.Request, params pets
 	}
 	pets, err := h.Client.FindPets(r.Context(), &req)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		h.Logger.Error("failed to find pets", zap.Error(err))
+		writeError(w, http.StatusInternalServerError, err, h.Logger)
 		return
 	}
 
@@ -124,7 +128,8 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 	var newPet petstore.NewPet
 	err := json.NewDecoder(r.Body).Decode(&newPet)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err)
+		h.Logger.Error("failed to decode request body", zap.Error(err))
+		writeError(w, http.StatusBadRequest, err, h.Logger)
 		return
 	}
 	tags := []*proto_storage.Tag{}
@@ -140,7 +145,8 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 		Tags:      tags,
 	})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		h.Logger.Error("failed to create pet", zap.Error(err))
+		writeError(w, http.StatusInternalServerError, err, h.Logger)
 		return
 	}
 
@@ -150,7 +156,8 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 func (h PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) {
 	_, err := h.Client.DeletePet(r.Context(), &proto_storage.PetID{Id: id})
 	if err != nil {
-		writeError(w, 0, err)
+		// h.Logger.Error("failed to delete pet", zap.Error(err))
+		writeError(w, 0, err, h.Logger)
 		return
 	}
 
@@ -160,7 +167,8 @@ func (h PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) 
 func (h PetHandler) FindPetByID(w http.ResponseWriter, r *http.Request, id int64) {
 	pet, err := h.Client.FindPetById(r.Context(), &proto_storage.PetID{Id: id})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err)
+		h.Logger.Error("failed to find pet", zap.Error(err))
+		writeError(w, http.StatusInternalServerError, err, h.Logger)
 		return
 	}
 

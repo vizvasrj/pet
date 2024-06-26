@@ -8,17 +8,23 @@ import (
 	"src/pkg/storage/service"
 	"src/proto_storage"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 func main() {
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
 	envs := env.GetEnvs()
 	db := database.GetConnection(envs)
 	defer db.Close()
 
 	s := &service.StorageService{
-		Db: db,
+		Db:     db,
+		Logger: logger,
 	}
 	lis, err := net.Listen("tcp", ":8081")
 	if err != nil {
