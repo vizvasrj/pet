@@ -75,16 +75,16 @@ func writeError(w http.ResponseWriter, code int32, err error) {
 	if code == 0 {
 		code = 500
 	}
-	// petErr := petstore.Error{
-	// 	Code:    code,
-	// 	Message: "Internal Server Error",
-	// }
-	// w.Header().Set("Content-Type", "application/json")
+	petErr := petstore.Error{
+		Code:    code,
+		Message: err.Error(),
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(int(code))
-	// err = json.NewEncoder(w).Encode(petErr)
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	// }
+	err = json.NewEncoder(w).Encode(petErr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {

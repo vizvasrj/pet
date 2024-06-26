@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: petstore-storage-service
 spec:
-  replicas: 1 # Adjust as needed
+  replicas: 1
   selector:
     matchLabels:
       app: petstore-storage-service
@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: petstore-storage-service
-        image: <your-storage-service-image> # Replace with your Docker image
+        image: us.icr.io/vizvasrj/petstore-storage-service:1
         ports:
         - containerPort: 8081
         env:
@@ -29,22 +29,10 @@ spec:
                 name: postgres-secrets
                 key: password
           - name: POSTGRES_HOST
-            value: postgres-service # Service name for PostgreSQL
+            value: postgres-service
           - name: POSTGRES_DB
             value: petstore
           - name: POSTGRES_PORT
             value: "5432"
           - name: POSTGRES_SSLMODE
-            value: disable  # Or "require" if using SSL
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: petstore-storage-service
-spec:
-  selector:
-    app: petstore-storage-service
-  ports:
-  - protocol: TCP
-    port: 8081
-    targetPort: 8081
+            value: disable

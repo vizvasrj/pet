@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"src/env"
+	"os"
 	"src/etheus"
 	"src/handler"
 	"src/middleware"
@@ -24,12 +24,12 @@ type App struct {
 }
 
 func (a *App) Initialize() {
-	envs := env.GetEnvs()
-	db := storageservice.GetConnection(envs)
+	// envs := env.GetEnvs()
+	// db := storageservice.GetConnection(envs)
 
-	a.Storage = &storageservice.StorageService{
-		Db: db,
-	}
+	// a.Storage = &storageservice.StorageService{
+	// 	Db: db,
+	// }
 	a.Router = mux.NewRouter()
 	a.Log = log.New(log.Writer(), "", 0)
 }
@@ -51,7 +51,11 @@ func (a *App) SetupRoutes() {
 	// petHandler := handler.PetHandler{
 	// 	Storage: a.Storage,
 	// }
-	petHandler, err := handler.NewPetHandler("example.com:8081")
+	STORAGE_SERVICE_URL := os.Getenv("STORAGE_SERVICE_URL")
+	if STORAGE_SERVICE_URL == "" {
+		a.Log.Fatalf("STORAGE_SERVICE_URL is not set")
+	}
+	petHandler, err := handler.NewPetHandler(STORAGE_SERVICE_URL)
 	if err != nil {
 		a.Log.Fatalf("Error initializing PetHandler: %v", err)
 	}

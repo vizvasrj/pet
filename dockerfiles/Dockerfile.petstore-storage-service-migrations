@@ -1,0 +1,18 @@
+FROM rust:latest AS builder
+
+WORKDIR /app
+COPY ./run_migrations.sh ./
+COPY ./migrations ./migrations
+RUN cargo install sqlx-cli --no-default-features --features postgres
+
+FROM debian:stable-slim
+RUN apt-get update && apt-get install -y postgresql-client
+
+COPY --from=builder /usr/local/cargo/bin/sqlx /usr/local/bin
+
+COPY ./run_migrations.sh ./
+COPY ./migrations ./migrations
+RUN chmod +x ./run_migrations.sh
+
+# Set the entrypoint to your migration script
+ENTRYPOINT ["./run_migrations.sh"] 

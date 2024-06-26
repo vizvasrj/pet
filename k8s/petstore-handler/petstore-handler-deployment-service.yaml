@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: petstore-handler
-        image: <your-handler-image> # Replace with your Docker image
+        image: us.icr.io/vizvasrj/petstore-handler-service:1 # Replace with your Docker image
         ports:
         - containerPort: 8080
         env:
