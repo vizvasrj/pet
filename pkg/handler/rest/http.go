@@ -96,7 +96,7 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	json.NewEncoder(w).Encode(data)
 }
 
-func (h PetHandler) FindPets(w http.ResponseWriter, r *http.Request, params petstore.FindPetsParams) {
+func (h *PetHandler) FindPets(w http.ResponseWriter, r *http.Request, params petstore.FindPetsParams) {
 	tags := []string{}
 	if params.Tags != nil {
 		tags = *params.Tags
@@ -124,7 +124,7 @@ func (h PetHandler) FindPets(w http.ResponseWriter, r *http.Request, params pets
 	writeJSON(w, http.StatusOK, pets)
 }
 
-func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
+func (h *PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 	var newPet petstore.NewPet
 	err := json.NewDecoder(r.Body).Decode(&newPet)
 	if err != nil {
@@ -153,7 +153,7 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, pet)
 }
 
-func (h PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) {
+func (h *PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) {
 	_, err := h.Client.DeletePet(r.Context(), &proto_storage.PetID{Id: id})
 	if err != nil {
 		// h.Logger.Error("failed to delete pet", zap.Error(err))
@@ -164,7 +164,7 @@ func (h PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) 
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h PetHandler) FindPetByID(w http.ResponseWriter, r *http.Request, id int64) {
+func (h *PetHandler) FindPetByID(w http.ResponseWriter, r *http.Request, id int64) {
 	pet, err := h.Client.FindPetById(r.Context(), &proto_storage.PetID{Id: id})
 	if err != nil {
 		h.Logger.Error("failed to find pet", zap.Error(err))

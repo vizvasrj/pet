@@ -5,6 +5,7 @@ import (
 	"net"
 	"src/env"
 	"src/pkg/storage/database"
+	"src/pkg/storage/middleware"
 	"src/pkg/storage/service"
 	"src/proto_storage"
 
@@ -36,7 +37,9 @@ func main() {
 		log.Fatalf("failed to load credentials: %v", err)
 
 	}
-	server := grpc.NewServer(grpc.Creds(creds))
+	serverCreds := grpc.Creds(creds)
+	recoveryMiddleware := grpc.UnaryInterceptor(middleware.RecoveryMiddleware(logger))
+	server := grpc.NewServer(serverCreds, recoveryMiddleware)
 	proto_storage.RegisterStorageServiceServer(server, s)
 
 	if err := server.Serve(lis); err != nil {

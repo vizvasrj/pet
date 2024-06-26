@@ -1,8 +1,8 @@
 ## create docker images
 ```bash
-docker build -t us.icr.io/vizvasrj/petstore-storage-service:1 -f dockerfile/Dockerfile.petstore-storage-service .
-docker build -t us.icr.io/vizvasrj/petstore-storage-service-migrations:1 -f dockerfile/Dockerfile.petstore-storage-service-migrations .
-docker build -t us.icr.io/vizvasrj/petstore-handler-service:1 -f dockerfile/Dockerfile.petstore-handler-service .
+docker build -t us.icr.io/vizvasrj/petstore-storage-service:1 -f dockerfiles/Dockerfile.petstore-storage-service .
+docker build -t us.icr.io/vizvasrj/petstore-storage-service-migrations:1 -f dockerfiles/Dockerfile.petstore-storage-service-migrations .
+docker build -t us.icr.io/vizvasrj/petstore-handler-service:1 -f dockerfiles/Dockerfile.petstore-handler-service .
 ```
 
 ## copy images to kind

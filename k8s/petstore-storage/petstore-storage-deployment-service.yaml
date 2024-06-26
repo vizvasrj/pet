@@ -36,3 +36,15 @@ spec:
             value: "5432"
           - name: POSTGRES_SSLMODE
             value: disable
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: petstore-storage-service
+spec:
+  selector:
+    app: petstore-storage-service
+  ports:
+  - protocol: TCP
+    port: 8081
+    targetPort: 8081
