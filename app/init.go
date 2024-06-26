@@ -9,7 +9,6 @@ import (
 	"src/handler"
 	"src/middleware"
 	"src/petstore"
-	"src/storageservice"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -17,10 +16,10 @@ import (
 
 type App struct {
 	Router     *mux.Router
-	Storage    *storageservice.StorageService
 	Log        *log.Logger
 	httpServer *http.Server
 	Metrics    *etheus.Metrics
+	// Storage    *storageservice.StorageService
 }
 
 func (a *App) Initialize() {

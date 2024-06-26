@@ -9,5 +9,5 @@ build:
 
 protoc-storage-service:
 	@echo "Generating Go files"
-	cd protoStorageService && protoc --go_out=. --go-grpc_out=. \
+	cd proto && protoc --go_out=../proto_storage --go-grpc_out=../proto_storage \
 		--go-grpc_opt=paths=source_relative --go_opt=paths=source_relative *.proto

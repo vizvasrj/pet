@@ -1,4 +1,4 @@
-package grpcstorageservice
+package storage
 
 import (
 	"context"
@@ -6,17 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"src/myerror"
-	protostorageservice "src/protoStorageService"
+	"src/proto_storage"
 
 	"github.com/fatih/color"
 )
 
 type StorageService struct {
-	protostorageservice.UnimplementedStorageServiceServer
+	proto_storage.UnimplementedStorageServiceServer
 	Db *sql.DB
 }
 
-func (s *StorageService) CreatePet(ctx context.Context, pet *protostorageservice.NewPet) (*protostorageservice.Pet, error) {
+func (s *StorageService) CreatePet(ctx context.Context, pet *proto_storage.NewPet) (*proto_storage.Pet, error) {
 	tx, err := s.Db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, myerror.WrapError(err, "failed to begin transaction")
@@ -35,7 +35,7 @@ func (s *StorageService) CreatePet(ctx context.Context, pet *protostorageservice
 	return createdPet, nil
 }
 
-func (s *StorageService) FindPets(ctx context.Context, req *protostorageservice.FindPetsRequest) (*protostorageservice.FindPetsResponse, error) {
+func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPetsRequest) (*proto_storage.FindPetsResponse, error) {
 	color.Red("hi there")
 
 	// 1. Build the base query
@@ -77,7 +77,7 @@ func (s *StorageService) FindPets(ctx context.Context, req *protostorageservice.
 	defer rows.Close()
 
 	// 5. Process the result set
-	pets := []*protostorageservice.Pet{}
+	pets := []*proto_storage.Pet{}
 	for rows.Next() {
 		var (
 			petId        int64
@@ -93,16 +93,16 @@ func (s *StorageService) FindPets(ctx context.Context, req *protostorageservice.
 		}
 
 		// Unmarshal the tags
-		var tags []*protostorageservice.Tag
+		var tags []*proto_storage.Tag
 		err = json.Unmarshal([]byte(tagsString), &tags)
 		if err != nil {
 			return nil, myerror.WrapError(err, "failed to unmarshal tags")
 		}
 		// Create pet object
-		pet := &protostorageservice.Pet{
+		pet := &proto_storage.Pet{
 			Id:   petId,
 			Name: petName,
-			Category: &protostorageservice.Category{
+			Category: &proto_storage.Category{
 				Id:   categoryId,
 				Name: categoryName,
 			},
@@ -116,17 +116,17 @@ func (s *StorageService) FindPets(ctx context.Context, req *protostorageservice.
 		}
 		pets = append(pets, pet)
 	}
-	resp := protostorageservice.FindPetsResponse{
+	resp := proto_storage.FindPetsResponse{
 		Pets: pets,
 	}
 
 	return &resp, nil
 }
 
-func (s *StorageService) FindPetById(ctx context.Context, req *protostorageservice.PetID) (*protostorageservice.Pet, error) {
+func (s *StorageService) FindPetById(ctx context.Context, req *proto_storage.PetID) (*proto_storage.Pet, error) {
 	color.Red("hi there")
 	// Implement the method
-	pet := &protostorageservice.Pet{Id: req.Id}
+	pet := &proto_storage.Pet{Id: req.Id}
 	query := `
 	SELECT 
 		p.id, 
@@ -157,7 +157,7 @@ func (s *StorageService) FindPetById(ctx context.Context, req *protostorageservi
 		return nil, myerror.WrapError(err, "failed to find pet")
 	}
 	pet.Name = petName
-	pet.Category = &protostorageservice.Category{
+	pet.Category = &proto_storage.Category{
 		Id:   categoryId,
 		Name: categoryName,
 	}
@@ -165,7 +165,7 @@ func (s *StorageService) FindPetById(ctx context.Context, req *protostorageservi
 		pet.Status = status.String
 	}
 	// Unmarshal the tags
-	var tags []*protostorageservice.Tag
+	var tags []*proto_storage.Tag
 	err = json.Unmarshal([]byte(tagsString), &tags)
 	if err != nil {
 		return nil, myerror.WrapError(err, "failed to unmarshal tags")
@@ -175,7 +175,7 @@ func (s *StorageService) FindPetById(ctx context.Context, req *protostorageservi
 	return pet, nil
 }
 
-func (s *StorageService) DeletePet(ctx context.Context, req *protostorageservice.PetID) (*protostorageservice.Empty, error) {
+func (s *StorageService) DeletePet(ctx context.Context, req *proto_storage.PetID) (*proto_storage.Empty, error) {
 	// Implement the method
 	tx, err := s.Db.BeginTx(ctx, nil)
 	if err != nil {

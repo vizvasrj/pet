@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"src/petstore"
-	protostorageservice "src/protoStorageService"
+	"src/proto_storage"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -18,7 +18,7 @@ import (
 
 type PetHandler struct {
 	// Storage *storageservice.StorageService
-	Client protostorageservice.StorageServiceClient
+	Client proto_storage.StorageServiceClient
 }
 
 // func NewPetHandler(storageURL string) (*PetHandler, error) {
@@ -29,7 +29,7 @@ type PetHandler struct {
 // 		return nil, err
 // 	}
 // 	return &PetHandler{
-// 		Client: protostorageservice.NewStorageServiceClient(conn),
+// 		Client: proto_storage.NewStorageServiceClient(conn),
 // 	}, nil
 // }
 
@@ -58,7 +58,7 @@ func NewPetHandler(storageURL string) (*PetHandler, error) {
 	}
 
 	return &PetHandler{
-		Client: protostorageservice.NewStorageServiceClient(conn),
+		Client: proto_storage.NewStorageServiceClient(conn),
 	}, nil
 }
 
@@ -102,7 +102,7 @@ func (h PetHandler) FindPets(w http.ResponseWriter, r *http.Request, params pets
 	if params.Limit != nil {
 		limit = int64(*params.Limit)
 	}
-	req := protostorageservice.FindPetsRequest{
+	req := proto_storage.FindPetsRequest{
 		Limit: int32(limit),
 		Tags:  tags,
 	}
@@ -127,14 +127,14 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err)
 		return
 	}
-	tags := []*protostorageservice.Tag{}
+	tags := []*proto_storage.Tag{}
 	for _, tag := range newPet.Tags {
-		tags = append(tags, &protostorageservice.Tag{Id: tag.Id, Name: tag.Name})
+		tags = append(tags, &proto_storage.Tag{Id: tag.Id, Name: tag.Name})
 	}
 
-	pet, err := h.Client.CreatePet(r.Context(), &protostorageservice.NewPet{
+	pet, err := h.Client.CreatePet(r.Context(), &proto_storage.NewPet{
 		Name:      newPet.Name,
-		Category:  &protostorageservice.Category{Name: newPet.Category.Name},
+		Category:  &proto_storage.Category{Name: newPet.Category.Name},
 		Status:    newPet.Status,
 		PhotoUrls: newPet.PhotoUrls,
 		Tags:      tags,
@@ -148,7 +148,7 @@ func (h PetHandler) AddPet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) {
-	_, err := h.Client.DeletePet(r.Context(), &protostorageservice.PetID{Id: id})
+	_, err := h.Client.DeletePet(r.Context(), &proto_storage.PetID{Id: id})
 	if err != nil {
 		writeError(w, 0, err)
 		return
@@ -158,7 +158,7 @@ func (h PetHandler) DeletePet(w http.ResponseWriter, r *http.Request, id int64) 
 }
 
 func (h PetHandler) FindPetByID(w http.ResponseWriter, r *http.Request, id int64) {
-	pet, err := h.Client.FindPetById(r.Context(), &protostorageservice.PetID{Id: id})
+	pet, err := h.Client.FindPetById(r.Context(), &proto_storage.PetID{Id: id})
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return

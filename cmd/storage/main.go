@@ -4,9 +4,8 @@ import (
 	"log"
 	"net"
 	"src/env"
-	grpcstorageservice "src/grpcStorageService"
-	protostorageservice "src/protoStorageService"
-	"src/storageservice"
+	"src/proto_storage"
+	"src/storage"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -14,8 +13,8 @@ import (
 
 func main() {
 	envs := env.GetEnvs()
-	db := storageservice.GetConnection(envs)
-	s := &grpcstorageservice.StorageService{
+	db := storage.GetConnection(envs)
+	s := &storage.StorageService{
 		Db: db,
 	}
 	defer db.Close()
@@ -31,7 +30,7 @@ func main() {
 
 	}
 	server := grpc.NewServer(grpc.Creds(creds))
-	protostorageservice.RegisterStorageServiceServer(server, s)
+	proto_storage.RegisterStorageServiceServer(server, s)
 
 	if err := server.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

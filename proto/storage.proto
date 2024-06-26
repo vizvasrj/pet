@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package protostorageservice;
+package proto_storage;
 
-option go_package = "src/protostorageservice";
+option go_package = "src/proto_storage";
 
 message Category {
     int64 id = 1;

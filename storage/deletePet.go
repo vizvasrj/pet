@@ -1,4 +1,4 @@
-package grpcstorageservice
+package storage
 
 import (
 	"context"

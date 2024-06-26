@@ -1,15 +1,15 @@
-package grpcstorageservice
+package storage
 
 import (
 	"context"
 	"database/sql"
 	"src/myerror"
-	protostorageservice "src/protoStorageService"
+	"src/proto_storage"
 
 	"github.com/fatih/color"
 )
 
-func (s *StorageService) createPetInTransaction(ctx context.Context, tx *sql.Tx, pet *protostorageservice.NewPet) (*protostorageservice.Pet, error) {
+func (s *StorageService) createPetInTransaction(ctx context.Context, tx *sql.Tx, pet *proto_storage.NewPet) (*proto_storage.Pet, error) {
 	// 1. Find or Create Category
 	categoryID, err := s.findOrCreateCategory(ctx, tx, pet.Category.Name)
 	if err != nil {
@@ -36,7 +36,7 @@ func (s *StorageService) createPetInTransaction(ctx context.Context, tx *sql.Tx,
 		}
 	}
 
-	return &protostorageservice.Pet{
+	return &proto_storage.Pet{
 		Id:       createdPetID,
 		Category: pet.Category,
 	}, nil
@@ -71,7 +71,7 @@ func (s *StorageService) createPetRecord(ctx context.Context, tx *sql.Tx, name s
 	return petID, nil
 }
 
-func (s *StorageService) createPetTags(ctx context.Context, tx *sql.Tx, petID int64, tags []*protostorageservice.Tag) error {
+func (s *StorageService) createPetTags(ctx context.Context, tx *sql.Tx, petID int64, tags []*proto_storage.Tag) error {
 	if tags == nil {
 		return nil
 	}

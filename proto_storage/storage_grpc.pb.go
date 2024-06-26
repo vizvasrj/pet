@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.12
-// source: storageService.proto
+// source: storage.proto
 
-package protostorageservice
+package proto_storage
 
 import (
 	context "context"
@@ -38,7 +38,7 @@ func NewStorageServiceClient(cc grpc.ClientConnInterface) StorageServiceClient {
 
 func (c *storageServiceClient) CreatePet(ctx context.Context, in *NewPet, opts ...grpc.CallOption) (*Pet, error) {
 	out := new(Pet)
-	err := c.cc.Invoke(ctx, "/protostorageservice.StorageService/CreatePet", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto_storage.StorageService/CreatePet", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (c *storageServiceClient) CreatePet(ctx context.Context, in *NewPet, opts .
 
 func (c *storageServiceClient) FindPets(ctx context.Context, in *FindPetsRequest, opts ...grpc.CallOption) (*FindPetsResponse, error) {
 	out := new(FindPetsResponse)
-	err := c.cc.Invoke(ctx, "/protostorageservice.StorageService/FindPets", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto_storage.StorageService/FindPets", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (c *storageServiceClient) FindPets(ctx context.Context, in *FindPetsRequest
 
 func (c *storageServiceClient) FindPetById(ctx context.Context, in *PetID, opts ...grpc.CallOption) (*Pet, error) {
 	out := new(Pet)
-	err := c.cc.Invoke(ctx, "/protostorageservice.StorageService/FindPetById", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto_storage.StorageService/FindPetById", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (c *storageServiceClient) FindPetById(ctx context.Context, in *PetID, opts 
 
 func (c *storageServiceClient) DeletePet(ctx context.Context, in *PetID, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, "/protostorageservice.StorageService/DeletePet", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto_storage.StorageService/DeletePet", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func _StorageService_CreatePet_Handler(srv interface{}, ctx context.Context, dec
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protostorageservice.StorageService/CreatePet",
+		FullMethod: "/proto_storage.StorageService/CreatePet",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServiceServer).CreatePet(ctx, req.(*NewPet))
@@ -140,7 +140,7 @@ func _StorageService_FindPets_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protostorageservice.StorageService/FindPets",
+		FullMethod: "/proto_storage.StorageService/FindPets",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServiceServer).FindPets(ctx, req.(*FindPetsRequest))
@@ -158,7 +158,7 @@ func _StorageService_FindPetById_Handler(srv interface{}, ctx context.Context, d
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protostorageservice.StorageService/FindPetById",
+		FullMethod: "/proto_storage.StorageService/FindPetById",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServiceServer).FindPetById(ctx, req.(*PetID))
@@ -176,7 +176,7 @@ func _StorageService_DeletePet_Handler(srv interface{}, ctx context.Context, dec
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protostorageservice.StorageService/DeletePet",
+		FullMethod: "/proto_storage.StorageService/DeletePet",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServiceServer).DeletePet(ctx, req.(*PetID))
@@ -188,7 +188,7 @@ func _StorageService_DeletePet_Handler(srv interface{}, ctx context.Context, dec
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var StorageService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "protostorageservice.StorageService",
+	ServiceName: "proto_storage.StorageService",
 	HandlerType: (*StorageServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -209,5 +209,5 @@ var StorageService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "storageService.proto",
+	Metadata: "storage.proto",
 }
