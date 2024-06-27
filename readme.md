@@ -14,36 +14,18 @@ kind load docker-image us.icr.io/vizvasrj/petstore-handler-service:1
 
 ---
 
-## create postgres k8s deployment and service
-### create secret
+## create postgres k8s secret, pvc, deployment and service
 ```bash
-kubectl apply -f k8s/postgres/postgres-secret.yaml
-```
-### create pvc, deployment and service
-```bash
-kubectl apply -f k8s/postgres/postgres-pvc.yaml
-```
-### create deployment and service
-```bash
-kubectl apply -f k8s/postgres/postgres-deployment.yaml
+kubectl apply -f k8s/postgres/postgres-secret-pvc-deployment-service.yaml
 ```
 
-### create service
-```bash
-kubectl apply -f k8s/postgres/postgres-service.yaml
-```
 ---
 ## create petstore-storage-service deployment and service
 
-### create petstore-storage-service deployment
 ```bash
-kubectl apply -f k8s/petstore-storage/petstore-storage-deployment.yaml
+kubectl apply -f k8s/petstore-storage/petstore-storage-deployment-service.yaml
 ```
 
-### create petstore-storage-service service
-```bash
-kubectl apply -f k8s/petstore-storage/petstore-storage-service.yaml
-```
 ---
 ### for migrations
 ```bash
