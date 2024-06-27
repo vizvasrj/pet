@@ -8,7 +8,6 @@ import (
 	"src/myerror"
 	"src/proto_storage"
 
-	"github.com/fatih/color"
 	"go.uber.org/zap"
 )
 
@@ -105,7 +104,6 @@ func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPe
 		if err := rows.Scan(&petId, &petName, &categoryId, &categoryName, &status, &tagsString, &photosString); err != nil {
 			return nil, myerror.WrapError(s.Logger, err, "failed to scan pet row")
 		}
-		fmt.Println(photosString)
 		var photos []Photo
 		if photosString.Valid {
 			err := json.Unmarshal([]byte(photosString.String), &photos)
@@ -134,7 +132,6 @@ func (s *StorageService) FindPets(ctx context.Context, req *proto_storage.FindPe
 		// 	}
 		// }
 		// Create pet object
-		color.HiRed("photoStrings: %v", photoStrings)
 
 		pet := &proto_storage.Pet{
 			Id:   petId,
