@@ -36,5 +36,14 @@ kubectl apply -f k8s/prometheus/prometheus-config-deployment-service.yaml
 ```bash
 kubectl apply -f k8s/migrations/petstore-storage-service-migrations.yaml
 ```
+---
 
+### for connecting to handler service in local host need to port forward
+```bash
+kubectl port-forward service/petstore-handler-service 80:80
+```
 
+### for connecting to prometheus in local host need to port forward
+```bash
+kubectl port-forward service/prometheus-service 9090:80
+```
