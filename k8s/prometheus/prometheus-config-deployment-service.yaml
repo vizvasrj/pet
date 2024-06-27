@@ -1,0 +1,57 @@
+# ConfigMap for Prometheus configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+data:
+  prometheus.yml: |-
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+    - job_name: 'petstore'
+      static_configs:
+      - targets: ['petstore-handler-service:8080'] # Update with your service names
+    - job_name: 'prometheus'
+      static_configs:
+      - targets: ['localhost:9090']  # Scraping Prometheus itself
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus-server
+  template:
+    metadata:
+      labels:
+        app: prometheus-server
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.30.3 # Replace with the version you want
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+spec:
+  selector:
+    app: prometheus-server
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9090
+  type: LoadBalancer

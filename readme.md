@@ -27,6 +27,11 @@ kubectl apply -f k8s/petstore-storage/petstore-storage-deployment-service.yaml
 ```
 
 ---
+## create prometheus configmap, deployment and service
+```bash
+kubectl apply -f k8s/prometheus/prometheus-config-deployment-service.yaml
+```
+---
 ### for migrations
 ```bash
 kubectl apply -f k8s/migrations/petstore-storage-service-migrations.yaml
